@@ -826,6 +826,7 @@ public:
     String *tm;
     Parm *p;
     int i;
+	String *implFun = NewString("");
     String *c_return_type = NewString("");
     String *im_return_type = NewString("");
     String *cleanup = NewString("");
@@ -851,6 +852,7 @@ public:
 
     // A new wrapper function object
     Wrapper *f = NewWrapper();
+	Wrapper *f1 = NewWrapper();
 
     // Make a wrapper name for this function
     String *jniname = makeValidJniName(overloaded_name);
@@ -880,7 +882,9 @@ public:
     if (!is_void_return)
       Wrapper_add_localv(f, "jresult", c_return_type, "jresult = 0", NIL);
 
-    Printv(f->def, "SWIGEXPORT ", c_return_type, " JNICALL ", wname, "(JNIEnv *jenv, jclass jcls", NIL);
+    Printv(f->def, "", c_return_type, " Impl_", wname, "(JNIEnv *jenv, jclass jcls", NIL);
+	Printv(f1->def, "SWIGEXPORT ", c_return_type, " JNICALL ", wname, "(JNIEnv *jenv, jclass jcls", NIL);
+	Printv(implFun, "Impl_", wname, "(jenv, jcls", NIL);
 
     // Usually these function parameters are unused - The code below ensures
     // that compilers do not issue such a warning if configured to do so.
@@ -948,6 +952,8 @@ public:
 
       // Add parameter to C function
       Printv(f->def, ", ", c_param_type, " ", arg, NIL);
+	  Printv(f1->def, ", ", c_param_type, " ", arg, NIL);
+	  Printf(implFun, ", %s", arg, NIL);
 
       ++gencomma;
 
@@ -957,6 +963,8 @@ public:
 	if (pgc_parameter) {
 	  Printf(imclass_class_code, ", %s %s_", pgc_parameter, arg);
 	  Printf(f->def, ", jobject %s_", arg);
+	  Printf(f1->def, ", jobject %s_", arg);
+	  Printf(implFun, ", %s_", arg);
 	  Printf(f->code, "    (void)%s_;\n", arg);
 	}
       }
@@ -1100,10 +1108,37 @@ public:
     Printf(imclass_class_code, ";\n");
 
     Printf(f->def, ") {");
+	Printf(f1->def, ") {");
+	Printf(implFun, ")");
 
-    if (!is_void_return)
-      Printv(f->code, "    return jresult;\n", NIL);
+
+
+	if (!is_void_return)
+	{
+		Printv(f->code, "    return jresult;\n", NIL);
+		Printv(f1->code, "    return ", NIL);
+	}
+
     Printf(f->code, "}\n");
+
+	Printf(f1->code, "nitro::CrashBorder([&]()\n{\n \treturn %s", implFun);
+	if (is_void_return)
+	{
+		Printf(f1->code, ";\n}, \"%s\");\n", wname);
+	}
+	else
+	{
+		if (0 == Cmp(c_return_type, "jlong")
+			|| 0 == Cmp(c_return_type, "jint"))
+		{
+			Printv(f1->code, ";\n}, (", c_return_type, ")-30, \"", wname, "\");\n", NIL); // Error_JNI_Call = -30
+		}
+		else
+		{
+			Printv(f1->code, ";\n}, (", c_return_type, ")0, \"", wname, "\");\n", NIL);
+		}
+	}
+	Printf(f1->code, "}\n");
 
     /* Substitute the cleanup code */
     Replaceall(f->code, "$cleanup", cleanup);
@@ -1120,8 +1155,12 @@ public:
       Replaceall(f->code, "$null", "");
 
     /* Dump the function out */
-    if (!native_function_flag)
-      Wrapper_print(f, f_wrappers);
+	if (!native_function_flag)
+	{
+		Wrapper_print(f, f_wrappers);
+		Wrapper_print(f1, f_wrappers);
+
+	}
 
     if (!(proxy_flag && is_wrapping_class()) && !enum_constant_flag) {
       moduleClassFunctionHandler(n);
@@ -1156,7 +1195,9 @@ public:
     Delete(outarg);
     Delete(body);
     Delete(overloaded_name);
+	Delete(implFun);
     DelWrapper(f);
+	DelWrapper(f1);
     return SWIG_OK;
   }
 
