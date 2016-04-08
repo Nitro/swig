@@ -45,6 +45,8 @@
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
+#include "stdafx.h"
+
 %}
 
 %insert(runtime) %{
@@ -69,6 +71,7 @@ typedef struct {
 
 %insert(runtime) {
 static void SWIGUNUSED SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const char *msg) {
+  NITRO_TRACE_ERROR() << "[SWIG] SWIG_JavaThrowException code:" << code << " msg:" << msg;
   jclass excep;
   static const SWIG_JavaExceptions_t java_exceptions[] = {
     { SWIG_JavaOutOfMemoryError, "java/lang/OutOfMemoryError" },

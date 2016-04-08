@@ -889,6 +889,7 @@ public:
     // Usually these function parameters are unused - The code below ensures
     // that compilers do not issue such a warning if configured to do so.
 
+    Printv(f->code, "    NITRO_TRACE_DEBUG() << \"[SWIG] ", wname, "\";\n", NIL);
     Printv(f->code, "    (void)jenv;\n", NIL);
     Printv(f->code, "    (void)jcls;\n", NIL);
 
@@ -4179,7 +4180,7 @@ public:
 
       /* Terminate wrapper code */
       Printf(w->code, "} else {\n");
-      Printf(w->code, "SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, \"null upcall object in %s::%s \");\n",
+	  Printf(w->code, "SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, \"null upcall object in %s::%s \");\n",
 	     SwigType_namestr(c_classname), SwigType_namestr(name));
       Printf(w->code, "}\n");
 
