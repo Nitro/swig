@@ -889,7 +889,7 @@ public:
     // Usually these function parameters are unused - The code below ensures
     // that compilers do not issue such a warning if configured to do so.
 
-    Printv(f->code, "    NITRO_TRACE_DEBUG() << \"[SWIG] ", wname, "\";\n", NIL);
+    Printv(f->code, "    LOG_DEBUG(\"[SWIG] ", wname, "\");\n", NIL);
     Printv(f->code, "    (void)jenv;\n", NIL);
     Printv(f->code, "    (void)jcls;\n", NIL);
 
